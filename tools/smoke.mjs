@@ -6,10 +6,20 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'bordvert-'));
-process.env.BORDVERT_STORE = path.join(tmp, 'store.json');
-delete process.env.DATABASE_URL;          // force the file backend
+// Runs against either backend. Point SMOKE_DATABASE_URL at a THROWAWAY database
+// to exercise the Postgres path (it publishes menus, so never aim it at real
+// data); with it unset the suite uses a temporary file store.
+const PG = process.env.SMOKE_DATABASE_URL;
+let tmp = null;
+if (PG) {
+  process.env.DATABASE_URL = PG;
+} else {
+  tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'bordvert-'));
+  process.env.BORDVERT_STORE = path.join(tmp, 'store.json');
+  delete process.env.DATABASE_URL;
+}
 process.env.ANTHROPIC_API_KEY = 'sk-ant-test-stub';
+console.log(`Backend: ${PG ? 'Postgres' : 'fil'}`);
 
 const canned = [];
 const calls = [];
@@ -125,12 +135,12 @@ t('history not ending in a guest turn rejected', r.code === 400);
 section('Conversation log');
 // Logging never blocks a guest's answer, so wait for the queue before reading.
 await store.flush();
-const logged = JSON.parse(fs.readFileSync(process.env.BORDVERT_STORE, 'utf8')).conversations || [];
+const logged = await store.recentConversations(DEMO_VENUE.slug, 50);
 t('conversations were logged', logged.length > 0, String(logged.length));
 t('a guard trip is on the record', logged.some((x) => x.guardTripped === true));
 t('a degraded answer is on the record', logged.some((x) => x.degraded === true));
 t('log records which dishes were shown', logged.every((x) => Array.isArray(x.shownRefs)));
 
-fs.rmSync(tmp, { recursive: true, force: true });
+if (tmp) fs.rmSync(tmp, { recursive: true, force: true });
 console.log(fail ? `\n${fail} FAILED\n` : '\nAll checks passed.\n');
 process.exit(fail ? 1 : 0);

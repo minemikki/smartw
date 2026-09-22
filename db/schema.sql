@@ -81,15 +81,25 @@ CREATE TABLE menu_version (
   created_at    timestamptz NOT NULL DEFAULT now(),
   published_at  timestamptz,
   created_by    text NOT NULL DEFAULT '',
-  UNIQUE (venue_id, label),
   -- A published version must record when, and a draft must not pretend to.
   CONSTRAINT published_has_timestamp
     CHECK ((status = 'published') = (published_at IS NOT NULL))
 );
 
+-- Labels are unique among versions that are a RECORD. A draft is working state:
+-- it starts life named after the published version it was derived from, and only
+-- gets its final, unique name when it is published. Making the constraint cover
+-- drafts too would mean you cannot edit the live menu without renaming it first.
+CREATE UNIQUE INDEX menu_version_label_unique
+  ON menu_version (venue_id, label) WHERE status <> 'draft';
+
 -- At most one published version per venue: the guest-facing menu is unambiguous.
 CREATE UNIQUE INDEX menu_version_one_published_per_venue
   ON menu_version (venue_id) WHERE status = 'published';
+
+-- And at most one draft, so "the draft" is always a single thing.
+CREATE UNIQUE INDEX menu_version_one_draft_per_venue
+  ON menu_version (venue_id) WHERE status = 'draft';
 
 CREATE INDEX menu_version_venue_idx ON menu_version (venue_id, created_at DESC);
 
@@ -172,10 +182,28 @@ CREATE TABLE attestation (
   signed_ip        inet
 );
 
--- Attestations are never edited or deleted: a correction is a new menu version
--- with its own signature. Enforced here rather than trusted to the app.
-CREATE RULE attestation_no_update AS ON UPDATE TO attestation DO INSTEAD NOTHING;
-CREATE RULE attestation_no_delete AS ON DELETE TO attestation DO INSTEAD NOTHING;
+-- An attestation is never EDITED: changing what a named person signed would make
+-- the signature a lie. A correction is a new menu version with its own
+-- signature.
+--
+-- Enforced with a trigger, not a RULE. `CREATE RULE ... DO INSTEAD NOTHING`
+-- looks like the obvious way to make a table append-only, but rules rewrite the
+-- internal referential-integrity queries that foreign keys run, and Postgres
+-- then fails inserts with "referential integrity query gave unexpected result".
+-- Triggers leave RI alone.
+--
+-- DELETE is deliberately left alone: it only happens by cascade when a whole
+-- menu version goes away, which takes its signature with it. That is removing a
+-- record, not rewriting one.
+CREATE FUNCTION attestation_is_immutable() RETURNS trigger AS $$
+BEGIN
+  RAISE EXCEPTION 'En attestering kan ikke endres. Publiser en ny menyversjon med egen signatur.';
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER attestation_no_update
+  BEFORE UPDATE ON attestation
+  FOR EACH ROW EXECUTE FUNCTION attestation_is_immutable();
 
 -- ---------------------------------------------------------------------------
 -- Conversation log
