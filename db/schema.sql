@@ -1,4 +1,4 @@
--- Smartwaiter schema (PostgreSQL 14+).
+-- Bordvert schema (PostgreSQL 14+).
 --
 -- Two rules drive the whole design, and both exist because of allergens:
 --

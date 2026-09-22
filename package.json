@@ -1,9 +1,9 @@
 {
-  "name": "smartwaiter",
+  "name": "bordvert",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "AI-kelner for norske restauranter — samtalebasert meny med allergenfiltrering i kode.",
+  "description": "Bordvert — AI-kelner for norske restauranter — samtalebasert meny med allergenfiltrering i kode.",
   "scripts": {
     "check": "node tools/check.mjs",
     "smoke": "node tools/smoke.mjs",

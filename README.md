@@ -1,10 +1,14 @@
-# Smartwaiter
+# Bordvert
 
-AI-kelner for restauranter. Gjesten spør fritt — «en rett til 300 kr, men jeg har allergi mot
-peanøtter, og hvilken øl passer?» — og får ett svar. Tre betingelser i én setning; ingen filterknapp
-løser det.
+En bordvert er den som har ansvar for gjestene ved sitt bord. Dette er den rollen, digitalt.
 
-*Arbeidsnavn. Demo med oppdiktet restaurant og oppdiktet meny.*
+Gjesten spør fritt — «en rett til 300 kr, men jeg har allergi mot peanøtter, og hvilken øl passer?» — og
+får ett svar. Tre betingelser i én setning; ingen filterknapp på en digital meny løser det.
+
+Navnet er valgt bevisst: dette er en vert du legger til, ikke en ansatt du fjerner. Personalet bekrefter
+fortsatt allergier ved bestilling, og produktet er bygget for å si det hver gang.
+
+*Demo med oppdiktet restaurant og oppdiktet meny — ingen ekte kundes allergendata.*
 
 ## Modellen gjør språk. Koden gjør sikkerhet.
 

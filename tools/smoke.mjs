@@ -6,8 +6,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'smartwaiter-'));
-process.env.SMARTWAITER_STORE = path.join(tmp, 'store.json');
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'bordvert-'));
+process.env.BORDVERT_STORE = path.join(tmp, 'store.json');
 delete process.env.DATABASE_URL;          // force the file backend
 process.env.ANTHROPIC_API_KEY = 'sk-ant-test-stub';
 
@@ -125,7 +125,7 @@ t('history not ending in a guest turn rejected', r.code === 400);
 section('Conversation log');
 // Logging never blocks a guest's answer, so wait for the queue before reading.
 await store.flush();
-const logged = JSON.parse(fs.readFileSync(process.env.SMARTWAITER_STORE, 'utf8')).conversations || [];
+const logged = JSON.parse(fs.readFileSync(process.env.BORDVERT_STORE, 'utf8')).conversations || [];
 t('conversations were logged', logged.length > 0, String(logged.length));
 t('a guard trip is on the record', logged.some((x) => x.guardTripped === true));
 t('a degraded answer is on the record', logged.some((x) => x.degraded === true));
