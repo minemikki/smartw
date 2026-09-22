@@ -309,7 +309,7 @@ function renderPanel(d) {
   }
   if (d.meta) {
     document.getElementById('att').innerHTML =
-      `Bekreftet <code>${d.meta.attestedAt}</code> · versjon <code>${d.meta.menuVersion}</code>. ` +
+      `Bekreftet <code>${String(d.meta.attestedAt || '').slice(0, 10)}</code> · versjon <code>${d.meta.menuVersion}</code>. ` +
       'Modellen kan ikke påstå noe utenfor denne listen — mangler et felt, går spørsmålet til personalet.';
   }
 }
