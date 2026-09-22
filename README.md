@@ -52,16 +52,47 @@ psql "$DATABASE_URL" -f db/schema.sql   # bare for Postgres
 node db/seed.mjs                        # publiserer demomenyen
 ```
 
+## Menyadmin
+
+`/admin.html`. Innlogging med magisk lenke — ingen passord. Sesjonen er et HMAC-signert cookie, så den
+overlever en kald start uten sesjonstabell, og et tuklet cookie feiler lukket. **Sesjonen bestemmer hvilket
+lokale som redigeres, aldri forespørselen**, ellers kunne én kundes innlogging endre en annens allergendata.
+
+Allergenrutenettet er der UX-en avgjør om produktet blir brukt: 14 chips per rett som klikkes gjennom
+**ingen → inneholder → spor av**. En kjøkkensjef tapper seg gjennom menyen i stedet for å lete i to
+separate avkryssingsrader.
+
+Tre tilstander som betyr noe:
+
+- **Utkast** — lagres fritt, gjesten ser det aldri. Ingen signatur nødvendig.
+- **Ubekreftet rett** — `allergenStatus` defaulter til `unverified`. Alt annet enn en eksplisitt
+  avkryssing regnes som ubekreftet, og retten anbefales ikke til gjester med allergi. Statuslinjen teller
+  dem, fordi «3 av 14 retter mangler bekreftet allergeninfo» er det som faktisk får listen fylt ut.
+- **Publisert** — krever navn, rolle og en eksplisitt bekreftelse. Signaturen låses til allergendataene via
+  digesten, og endepunktet leser menyen tilbake gjennom gjestens egen laster: verifiserer ikke digesten,
+  får kunden beskjed med én gang i stedet for at en gjest oppdager det.
+
+**En publisert versjon blir aldri overskrevet.** Publiserer du med et navn som finnes, får den nye
+versjonen et suffiks, og den forrige arkiveres med signaturen intakt. Å slette den ville ødelagt
+nøyaktig det revisjonssporet skjemaet finnes for.
+
+All validering ligger i `lib/validate.js` som egen modul fordi den er en sikkerhetsgrense, ikke en
+bekvemmelighet: nettleseren kan sende hva som helst, og en allergen-id som slipper gjennom blir en allergen
+som aldri filtreres på. Alt er allow-listet og alle felt er begrenset.
+
 ## Kjøre lokalt
 
 ```bash
 npm install
-node db/seed.mjs                        # uten DATABASE_URL: skriver .data/store.json
-export ANTHROPIC_API_KEY=sk-ant-...
-npx vercel dev
+npm run seed                                    # uten DATABASE_URL: skriver .data/store.json
+export ANTHROPIC_API_KEY=sk-ant-...             # valgfritt, se under
+export SESSION_SECRET=$(openssl rand -base64 32)
+npm run dev                                     # http://localhost:4340
 ```
 
-Åpne `/?venue=brygge-og-bord`. Én installasjon betjener mange lokaler; slug'en velger menyen.
+`npm run dev` mounter `api/`-handlerne over vanlig http, så alt kjører uten Vercel CLI. Gjesten ligger på
+`/?venue=brygge-og-bord`; én installasjon betjener mange lokaler, og slug'en velger menyen. Admin ligger på
+`/admin.html` — uten `RESEND_API_KEY` skrives den magiske lenken til terminalen.
 
 **Uten `ANTHROPIC_API_KEY`, eller når modellen er utilgjengelig,** svarer endepunktet fortsatt: gjestens
 egne ord leses med ordstammene, koden filtrerer menyen på akkurat samme måte, og svaret blir den filtrerte
@@ -81,13 +112,20 @@ Begge suitene kjører **uten API-nøkkel og uten nett**:
   stubbet: vaktposten som slår inn, degradert modus når modellen er nede, at ukjent lokale gir 404, og at
   samtaleloggen faktisk skrives.
 
+`tools/admin-test.mjs` kjører adminflyten i en ekte nettleser (innlogging, chip-syklusen, signeringsporten,
+at publisering arkiverer forrige versjon). Den krever Playwright og en kjørende dev-server, så den er holdt
+utenfor `npm test` — instruksjoner ligger i toppen av fila.
+
 ## Filer
 
 | Fil | Rolle |
 |---|---|
 | `lib/allergens.js` | De 14 allergenene + ordstammene som leser gjestens egne ord. Ren modul, ingen menydata. |
 | `lib/digest.js` | Hashen som gjør attesteringen verifiserbar i stedet for dekorativ. |
-| `lib/store.js` | Lagring. Postgres eller fil, samme API. Lesestien håndhever attesteringen. |
+| `lib/store.js` | Lagring. Postgres eller fil, samme API — en test sjekker at de to ikke glir fra hverandre. Lesestien håndhever attesteringen. |
+| `lib/session.js` | HMAC-signerte sesjoner + magisk lenke. `requireSession` er det ene stedet som avgjør hvem som får redigere en meny. |
+| `lib/validate.js` | Sikkerhetsgrensen mot nettleseren. Allow-liste på allergener, tak på alle felt. |
+| `admin.html` + `api/menu.js` | Menyadmin: utkast, allergenrutenett, signering, versjonshistorikk. |
 | `lib/waiter.js` | Motoren — uttrekk, dobbeltlesing, filtrering, vaktpost, sikkerhetslinje. Tar `menu` som argument, så én installasjon betjener mange lokaler. |
 | `api/waiter.js` | `POST /api/waiter { venue, messages }` — to modellkall med deterministisk filtrering imellom, og degradert modus når modellen svikter. |
 | `db/schema.sql` | Skjemaet. Attesteringer er insert-only, håndhevet med regler i databasen. |

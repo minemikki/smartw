@@ -5,7 +5,7 @@ import {
   mergeConstraints, guardReply, safetyLine,
 } from '../lib/waiter.js';
 import { allergenDigest } from '../lib/digest.js';
-import { shapeMenu } from '../lib/store.js';
+import { shapeMenu, devStore, pgStore } from '../lib/store.js';
 import { DEMO_VENUE, DEMO_DISHES, DEMO_DRINKS, DEMO_ATTESTATION, DEMO_LABEL } from '../db/demo-menu.js';
 
 let fail = 0;
@@ -109,6 +109,17 @@ t('names who signed and when', /2026-09-18/.test(safetyLine(menu, c, res.needsSt
 t('absent when there is no allergy', safetyLine(menu, { allergens: [] }, []) === null);
 t('broken attestation says it cannot confirm, not that it filtered',
   /kan ikke bekrefte/.test(safetyLine(tampered, c, []) || ''));
+
+section('Both storage backends expose the same API');
+// Guards the thing that silently breaks in production: a method that only ever
+// got written for the dev backend, so it works locally and 500s on Postgres.
+const devKeys = Object.keys(devStore).sort();
+const pgKeys = Object.keys(pgStore).sort();
+const onlyDev = devKeys.filter((k) => !pgKeys.includes(k));
+const onlyPg = pgKeys.filter((k) => !devKeys.includes(k));
+t('no dev-only methods', onlyDev.length === 0, onlyDev.join(', '));
+t('no postgres-only methods', onlyPg.length === 0, onlyPg.join(', '));
+t('both are non-trivial', devKeys.length >= 12, String(devKeys.length));
 
 console.log(fail ? `\n${fail} FAILED\n` : '\nAll checks passed.\n');
 process.exit(fail ? 1 : 0);

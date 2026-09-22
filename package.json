@@ -7,7 +7,9 @@
   "scripts": {
     "check": "node tools/check.mjs",
     "smoke": "node tools/smoke.mjs",
-    "test": "node tools/check.mjs && node tools/smoke.mjs"
+    "test": "node tools/check.mjs && node tools/smoke.mjs",
+    "dev": "node tools/dev-server.mjs",
+    "seed": "node db/seed.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.127.0",

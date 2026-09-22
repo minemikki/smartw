@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Menyadmin — smartw</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+@font-face{font-family:"Inter Tight";font-style:normal;font-weight:400;font-display:swap;src:url(/fonts/inter-tight-400-latin.woff2) format("woff2")}
+@font-face{font-family:"Inter Tight";font-style:normal;font-weight:500;font-display:swap;src:url(/fonts/inter-tight-500-latin.woff2) format("woff2")}
+@font-face{font-family:"Inter Tight";font-style:normal;font-weight:600;font-display:swap;src:url(/fonts/inter-tight-600-latin.woff2) format("woff2")}
+:root{
+  --pearl:#f5f5f2;--pearl2:#ecece8;--ink:#151619;--ink2:#2c2e33;--muted:#61636b;--faint:#8c8f97;
+  --cobalt:#1248ff;--obsidian:#121316;--line:#d7d8d9;--on-dark:#f5f5f2;
+  --ok:#1a7f4b;--ok-bg:#e8f5ee;--warn:#8a5a00;--warn-bg:#fdf3e0;--stop:#a52121;--stop-bg:#fbeaea;
+  --f:"Inter Tight","Helvetica Neue",Helvetica,Arial,sans-serif;--r:9px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--pearl);color:var(--ink);font-family:var(--f);font-size:15px;
+  line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+h1,h2,h3{letter-spacing:-.02em;font-weight:600;margin:0}
+.wrap{max-width:1080px;margin:0 auto;padding:0 clamp(16px,3vw,32px)}
+
+button{font:inherit;cursor:pointer;border-radius:7px;border:1px solid var(--line);background:#fff;
+  color:var(--ink);padding:8px 14px;transition:all .15s ease}
+button:hover:not(:disabled){border-color:var(--ink)}
+button:disabled{opacity:.45;cursor:default}
+button.p{background:var(--ink);color:var(--on-dark);border-color:var(--ink);font-weight:500}
+button.p:hover:not(:disabled){background:var(--cobalt);border-color:var(--cobalt)}
+button.danger{color:var(--stop);border-color:#e8cfcf}
+button.tiny{padding:4px 9px;font-size:12.5px}
+
+input,textarea,select{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:7px;
+  background:#fff;color:var(--ink);width:100%}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--cobalt)}
+label.lbl{display:block;font-size:12px;font-weight:500;color:var(--muted);margin-bottom:4px}
+
+/* topp */
+header.top{background:var(--obsidian);color:var(--on-dark);position:sticky;top:0;z-index:20}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:14px;padding-top:14px;padding-bottom:14px}
+header.top h1{font-size:16px}
+header.top .sub{font-size:12.5px;color:#bfc0c8}
+header.top button{background:transparent;color:var(--on-dark);border-color:#34363d}
+header.top button:hover{border-color:var(--on-dark)}
+
+/* statuslinje */
+.bar{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:57px;z-index:19}
+.bar .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding-top:12px;padding-bottom:12px}
+.bar .spacer{flex:1 1 auto}
+.pill{font-size:12.5px;font-weight:500;padding:5px 11px;border-radius:999px;white-space:nowrap}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}
+.pill.warn{background:var(--warn-bg);color:var(--warn)}
+.pill.stop{background:var(--stop-bg);color:var(--stop)}
+.pill.flat{background:var(--pearl2);color:var(--ink2)}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:22px 0 20px}
+.tabs button{border:0;background:transparent;border-bottom:2px solid transparent;border-radius:0;
+  padding:9px 14px;color:var(--muted);font-weight:500}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--cobalt)}
+
+/* kort */
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:12px}
+.card.unverified{border-left:3px solid var(--warn)}
+.row{display:grid;grid-template-columns:90px minmax(0,1fr) 92px auto;gap:10px;align-items:end}
+@media(max-width:700px){.row{grid-template-columns:1fr 1fr}}
+.card .desc{margin-top:10px}
+.card .desc textarea{min-height:46px;resize:vertical}
+
+.grid-h{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);
+  margin:14px 0 7px}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{font-size:12.5px;padding:5px 10px;border-radius:6px;border:1px solid var(--line);
+  background:var(--pearl);color:var(--muted);user-select:none}
+.chip[data-state="contains"]{background:var(--stop-bg);border-color:#e3bcbc;color:var(--stop);font-weight:500}
+.chip[data-state="may"]{background:var(--warn-bg);border-color:#e8d6ac;color:var(--warn);font-weight:500}
+.chip.on{background:var(--ok-bg);border-color:#bcdcc9;color:var(--ok);font-weight:500}
+.hint{font-size:12.5px;color:var(--faint);margin-top:6px}
+
+.verify{display:flex;align-items:center;gap:8px;font-size:13px;white-space:nowrap}
+.verify input{width:auto}
+
+.tbl{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.tbl th,.tbl td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);font-size:13.5px}
+.tbl th{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);background:var(--pearl2)}
+.tbl tr:last-child td{border-bottom:0}
+
+/* meldinger */
+.msg{border-radius:var(--r);padding:12px 14px;margin-bottom:14px;font-size:13.5px;display:none}
+.msg.on{display:block}
+.msg.ok{background:var(--ok-bg);color:var(--ok)}
+.msg.bad{background:var(--stop-bg);color:var(--stop)}
+.msg ul{margin:7px 0 0;padding-left:20px}
+
+/* dialog */
+dialog{border:1px solid var(--line);border-radius:var(--r);padding:0;max-width:520px;width:calc(100% - 32px);
+  background:#fff;color:var(--ink)}
+dialog::backdrop{background:rgba(18,19,22,.5)}
+.dlg{padding:24px}
+.dlg h2{font-size:19px;margin-bottom:8px}
+.dlg p.lede{font-size:14px;color:var(--muted);margin:0 0 18px}
+.dlg .f{margin-bottom:14px}
+.dlg .confirm{display:flex;gap:10px;align-items:flex-start;background:var(--warn-bg);padding:12px;
+  border-radius:7px;font-size:13.5px;color:var(--warn);margin:16px 0}
+.dlg .confirm input{width:auto;margin-top:2px;flex:none}
+.dlg .acts{display:flex;gap:8px;justify-content:flex-end}
+
+/* innlogging */
+.login{max-width:400px;margin:clamp(50px,12vh,120px) auto;padding:0 20px}
+.login h2{font-size:22px;margin-bottom:8px}
+.login p{color:var(--muted);font-size:14px;margin:0 0 20px}
+#app{display:none}
+#app.on{display:block}
+footer{padding:36px 0;font-size:12.5px;color:var(--faint)}
+</style>
+</head>
+<body>
+
+<!-- innlogging -->
+<div class="login" id="login">
+  <h2>Menyadmin</h2>
+  <p>Skriv e-postadressen din, så sender vi en innloggingslenke. Ingen passord.</p>
+  <div class="msg" id="login-msg"></div>
+  <form id="login-form">
+    <div style="margin-bottom:12px">
+      <label class="lbl" for="email">E-post</label>
+      <input id="email" type="email" required autocomplete="email" placeholder="deg@restauranten.no">
+    </div>
+    <button class="p" type="submit" id="login-btn" style="width:100%">Send innloggingslenke</button>
+  </form>
+</div>
+
+<!-- admin -->
+<div id="app">
+  <header class="top"><div class="wrap">
+    <div>
+      <h1 id="venue-name">—</h1>
+      <div class="sub" id="venue-sub">—</div>
+    </div>
+    <button id="logout" class="tiny">Logg ut</button>
+  </div></header>
+
+  <div class="bar"><div class="wrap">
+    <span class="pill flat" id="pill-version">—</span>
+    <span class="pill" id="pill-verify">—</span>
+    <span class="pill" id="pill-draft" hidden>Ulagrede endringer</span>
+    <span class="spacer"></span>
+    <button id="save">Lagre utkast</button>
+    <button class="p" id="publish">Publiser og signer</button>
+  </div></div>
+
+  <div class="wrap">
+    <div class="msg" id="msg"></div>
+
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="dishes">Retter</button>
+      <button role="tab" aria-selected="false" data-tab="drinks">Drikke</button>
+      <button role="tab" aria-selected="false" data-tab="history">Historikk</button>
+    </div>
+
+    <section id="tab-dishes">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div style="flex:1">
+          <label class="lbl" for="label">Navn på menyversjonen</label>
+          <input id="label" placeholder="meny-2026-09-22" style="max-width:280px">
+        </div>
+        <button id="add-dish">+ Legg til rett</button>
+      </div>
+      <div id="dishes"></div>
+    </section>
+
+    <section id="tab-drinks" hidden>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+        <button id="add-drink">+ Legg til drikke</button>
+      </div>
+      <div id="drinks"></div>
+    </section>
+
+    <section id="tab-history" hidden>
+      <div id="history"></div>
+    </section>
+  </div>
+  <footer><div class="wrap">
+    Allergenfelt med rød merking betyr «inneholder», gul betyr «kan inneholde spor av».
+    Bare retter du har huket av som bekreftet får en allergenpåstand overfor gjesten.
+  </div></footer>
+</div>
+
+<!-- signering -->
+<dialog id="dlg">
+  <form class="dlg" id="publish-form">
+    <h2>Signer og publiser</h2>
+    <p class="lede">Signaturen låses til nøyaktig disse allergendataene. Endrer du menyen senere, må den
+      signeres på nytt før endringen vises til gjester.</p>
+    <div class="msg" id="dlg-msg"></div>
+    <div id="dlg-warn"></div>
+    <div class="f"><label class="lbl" for="by-name">Navn på den som bekrefter</label>
+      <input id="by-name" required placeholder="Ingrid Hauge"></div>
+    <div class="f"><label class="lbl" for="by-role">Rolle</label>
+      <input id="by-role" required placeholder="Kjøkkensjef"></div>
+    <label class="confirm">
+      <input type="checkbox" id="confirmed">
+      <span>Jeg har gått gjennom allergeninformasjonen for hver rett, og bekrefter at den stemmer.</span>
+    </label>
+    <div class="acts">
+      <button type="button" id="dlg-cancel">Avbryt</button>
+      <button class="p" type="submit" id="dlg-go">Publiser</button>
+    </div>
+  </form>
+</dialog>
+
+<script type="module">
+const $ = (s) => document.querySelector(s);
+const el = (t, cls, txt) => { const x = document.createElement(t); if (cls) x.className = cls; if (txt != null) x.textContent = txt; return x; };
+
+let ALLERGENS = {}, DIETS = [];
+let state = { label: '', dishes: [], drinks: [] };
+let dirty = false;
+
+function show(box, kind, text, list) {
+  box.className = `msg on ${kind}`;
+  box.textContent = text;
+  if (list?.length) {
+    const ul = el('ul');
+    for (const e of list) ul.appendChild(el('li', null, e));
+    box.appendChild(ul);
+  }
+}
+const hide = (box) => { box.className = 'msg'; box.textContent = ''; };
+
+const markDirty = () => { dirty = true; $('#pill-draft').hidden = false; };
+
+// ---------------------------------------------------------------- innlogging
+$('#login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = $('#login-btn');
+  btn.disabled = true; btn.textContent = 'Sender …';
+  hide($('#login-msg'));
+  try {
+    const r = await fetch('/api/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: $('#email').value.trim() }),
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'Noe gikk galt');
+    show($('#login-msg'), 'ok', j.message);
+  } catch (err) {
+    show($('#login-msg'), 'bad', err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Send innloggingslenke';
+  }
+});
+
+$('#logout').addEventListener('click', async () => {
+  await fetch('/api/session', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'logout' }),
+  });
+  location.href = '/admin.html';
+});
+
+// ------------------------------------------------------------------ rendering
+function allergenChips(item, key) {
+  // One chip per allergen, cycling none → inneholder → spor. A kitchen going
+  // through a menu taps rather than hunting through two separate checkbox rows.
+  const wrap = el('div', 'chips');
+  for (const [id, label] of Object.entries(ALLERGENS)) {
+    const has = item.allergens.includes(id);
+    const may = (item.mayContain || []).includes(id);
+    const chip = el('button', 'chip', label);
+    chip.type = 'button';
+    chip.dataset.state = has ? 'contains' : may ? 'may' : '';
+    chip.title = has ? 'Inneholder' : may ? 'Kan inneholde spor av' : 'Ikke i retten';
+    chip.addEventListener('click', () => {
+      const next = has ? 'may' : may ? '' : 'contains';
+      item.allergens = item.allergens.filter((a) => a !== id);
+      item.mayContain = (item.mayContain || []).filter((a) => a !== id);
+      if (next === 'contains') item.allergens.push(id);
+      if (next === 'may' && key === 'dish') item.mayContain.push(id);
+      markDirty(); render();
+    });
+    wrap.appendChild(chip);
+  }
+  return wrap;
+}
+
+function dishCard(d, i) {
+  const card = el('div', 'card' + (d.allergenStatus !== 'verified' ? ' unverified' : ''));
+
+  const row = el('div', 'row');
+  const mk = (labelText, value, oninput, type = 'text') => {
+    const box = el('div');
+    box.appendChild(el('label', 'lbl', labelText));
+    const inp = el('input'); inp.type = type; inp.value = value ?? '';
+    inp.addEventListener('input', () => { oninput(inp.value); markDirty(); });
+    box.appendChild(inp); return box;
+  };
+  row.appendChild(mk('Id', d.ref, (v) => d.ref = v));
+  row.appendChild(mk('Navn', d.name, (v) => d.name = v));
+  row.appendChild(mk('Pris (kr)', d.price, (v) => d.price = parseInt(v, 10) || 0, 'number'));
+
+  const acts = el('div');
+  const ver = el('label', 'verify');
+  const cb = el('input'); cb.type = 'checkbox'; cb.checked = d.allergenStatus === 'verified';
+  cb.addEventListener('change', () => {
+    d.allergenStatus = cb.checked ? 'verified' : 'unverified';
+    markDirty(); render();
+  });
+  ver.appendChild(cb); ver.appendChild(el('span', null, 'Allergener bekreftet'));
+  acts.appendChild(ver);
+  const del = el('button', 'tiny danger', 'Slett');
+  del.type = 'button';
+  del.addEventListener('click', () => {
+    if (!confirm(`Slette «${d.name || d.ref}»?`)) return;
+    state.dishes.splice(i, 1); markDirty(); render();
+  });
+  acts.appendChild(del);
+  row.appendChild(acts);
+  card.appendChild(row);
+
+  const descBox = el('div', 'desc');
+  descBox.appendChild(el('label', 'lbl', 'Beskrivelse gjesten ser'));
+  const ta = el('textarea'); ta.value = d.desc || '';
+  ta.addEventListener('input', () => { d.desc = ta.value; markDirty(); });
+  descBox.appendChild(ta);
+  card.appendChild(descBox);
+
+  card.appendChild(el('div', 'grid-h', 'Allergener — klikk: ingen → inneholder → spor av'));
+  card.appendChild(allergenChips(d, 'dish'));
+  if (d.allergenStatus !== 'verified') {
+    card.appendChild(el('div', 'hint',
+      'Ikke bekreftet: denne retten anbefales ikke til gjester med allergi — de sendes til personalet.'));
+  }
+
+  card.appendChild(el('div', 'grid-h', 'Kosthold'));
+  const dietWrap = el('div', 'chips');
+  for (const diet of DIETS) {
+    const on = (d.diets || []).includes(diet);
+    const chip = el('button', 'chip' + (on ? ' on' : ''), diet);
+    chip.type = 'button';
+    chip.addEventListener('click', () => {
+      d.diets = on ? d.diets.filter((x) => x !== diet) : [...(d.diets || []), diet];
+      markDirty(); render();
+    });
+    dietWrap.appendChild(chip);
+  }
+  card.appendChild(dietWrap);
+
+  card.appendChild(el('div', 'grid-h', 'Passer til å drikke'));
+  const pairWrap = el('div', 'chips');
+  if (!state.drinks.length) {
+    pairWrap.appendChild(el('div', 'hint', 'Legg inn drikke først.'));
+  } else {
+    for (const k of state.drinks) {
+      const on = (d.pairings || []).some((p) => p.drink === k.ref);
+      const chip = el('button', 'chip' + (on ? ' on' : ''), k.name || k.ref);
+      chip.type = 'button';
+      chip.addEventListener('click', () => {
+        d.pairings = on ? d.pairings.filter((p) => p.drink !== k.ref)
+                        : [...(d.pairings || []), { drink: k.ref, why: '' }];
+        markDirty(); render();
+      });
+      pairWrap.appendChild(chip);
+    }
+  }
+  card.appendChild(pairWrap);
+  return card;
+}
+
+function drinkCard(k, i) {
+  const card = el('div', 'card');
+  const row = el('div', 'row');
+  const mk = (labelText, value, oninput, type = 'text') => {
+    const box = el('div');
+    box.appendChild(el('label', 'lbl', labelText));
+    const inp = el('input'); inp.type = type; inp.value = value ?? '';
+    if (type === 'number') inp.step = 'any';
+    inp.addEventListener('input', () => { oninput(inp.value); markDirty(); });
+    box.appendChild(inp); return box;
+  };
+  row.appendChild(mk('Id', k.ref, (v) => k.ref = v));
+  row.appendChild(mk('Navn', k.name, (v) => k.name = v));
+  row.appendChild(mk('Pris (kr)', k.price, (v) => k.price = parseInt(v, 10) || 0, 'number'));
+  const acts = el('div');
+  const del = el('button', 'tiny danger', 'Slett');
+  del.type = 'button';
+  del.addEventListener('click', () => {
+    if (!confirm(`Slette «${k.name || k.ref}»?`)) return;
+    // Drop pairings pointing at it, or the server rejects the save.
+    for (const d of state.dishes) d.pairings = (d.pairings || []).filter((p) => p.drink !== k.ref);
+    state.drinks.splice(i, 1); markDirty(); render();
+  });
+  acts.appendChild(del);
+  row.appendChild(acts);
+  card.appendChild(row);
+
+  const meta = el('div', 'row');
+  meta.style.marginTop = '10px';
+  const kindBox = el('div');
+  kindBox.appendChild(el('label', 'lbl', 'Type'));
+  const sel = el('select');
+  for (const opt of ['øl', 'vin', 'alkoholfri', 'annet']) {
+    const o = el('option', null, opt); o.value = opt;
+    if ((k.kind || 'annet') === opt) o.selected = true;
+    sel.appendChild(o);
+  }
+  sel.addEventListener('change', () => { k.kind = sel.value; markDirty(); });
+  kindBox.appendChild(sel);
+  meta.appendChild(kindBox);
+  meta.appendChild(mk('Alkohol (%)', k.abv, (v) => k.abv = parseFloat(v) || 0, 'number'));
+  card.appendChild(meta);
+
+  card.appendChild(el('div', 'grid-h', 'Allergener — klikk for «inneholder»'));
+  card.appendChild(allergenChips(k, 'drink'));
+  return card;
+}
+
+function render() {
+  $('#label').value = state.label;
+
+  const dishes = $('#dishes'); dishes.textContent = '';
+  if (!state.dishes.length) dishes.appendChild(el('div', 'hint', 'Ingen retter ennå — legg til den første.'));
+  state.dishes.forEach((d, i) => dishes.appendChild(dishCard(d, i)));
+
+  const drinks = $('#drinks'); drinks.textContent = '';
+  if (!state.drinks.length) drinks.appendChild(el('div', 'hint', 'Ingen drikke ennå.'));
+  state.drinks.forEach((k, i) => drinks.appendChild(drinkCard(k, i)));
+
+  const unver = state.dishes.filter((d) => d.allergenStatus !== 'verified').length;
+  const pill = $('#pill-verify');
+  if (!state.dishes.length) { pill.className = 'pill flat'; pill.textContent = 'Ingen retter'; }
+  else if (unver) {
+    pill.className = 'pill warn';
+    pill.textContent = `${unver} av ${state.dishes.length} retter mangler bekreftet allergeninfo`;
+  } else {
+    pill.className = 'pill ok';
+    pill.textContent = `Alle ${state.dishes.length} retter bekreftet`;
+  }
+}
+
+function renderHistory(versions, publishedState) {
+  const box = $('#history'); box.textContent = '';
+  if (publishedState && !publishedState.attestationOk) {
+    const m = el('div', 'msg on bad');
+    m.textContent = `Publisert meny verifiserer ikke: ${publishedState.problem}. Gjester får ingen allergenpåstand før den signeres på nytt.`;
+    box.appendChild(m);
+  }
+  if (!versions.length) { box.appendChild(el('div', 'hint', 'Ingen versjoner ennå.')); return; }
+  const t = el('table', 'tbl');
+  t.innerHTML = '<thead><tr><th>Versjon</th><th>Status</th><th>Retter</th><th>Signert av</th><th>Dato</th></tr></thead>';
+  const tb = el('tbody');
+  for (const v of versions) {
+    const tr = el('tr');
+    for (const cell of [
+      v.label,
+      v.status === 'published' ? 'Publisert' : v.status === 'draft' ? 'Utkast' : 'Arkivert',
+      String(v.dishCount ?? ''),
+      v.signedBy || '—',
+      v.signedAt ? String(v.signedAt).slice(0, 10) : (v.publishedAt ? String(v.publishedAt).slice(0, 10) : '—'),
+    ]) tr.appendChild(el('td', null, cell));
+    tb.appendChild(tr);
+  }
+  t.appendChild(tb); box.appendChild(t);
+}
+
+// ---------------------------------------------------------------------- data
+async function load() {
+  const r = await fetch('/api/menu');
+  if (r.status === 401) return false;
+  const j = await r.json();
+  if (!r.ok) { show($('#msg'), 'bad', j.error || 'Kunne ikke laste menyen.'); return true; }
+
+  ALLERGENS = j.allergens; DIETS = j.diets;
+  $('#venue-name').textContent = j.venue.name;
+  $('#venue-sub').textContent = `${j.venue.city || ''}${j.venue.city ? ' · ' : ''}${j.session.email}`;
+
+  // A draft in progress wins over the published version — that is the work.
+  const src = j.draft || j.published;
+  state = src
+    ? { label: src.label || '', dishes: structuredClone(src.dishes || []), drinks: structuredClone(src.drinks || []) }
+    : { label: `meny-${new Date().toISOString().slice(0, 10)}`, dishes: [], drinks: [] };
+  for (const d of state.dishes) { d.mayContain = d.mayContain || []; d.diets = d.diets || []; d.pairings = d.pairings || []; }
+
+  $('#pill-version').textContent = j.publishedState
+    ? `Publisert: ${j.publishedState.label}` : 'Ingen publisert meny';
+  $('#pill-draft').hidden = !j.draft;
+  dirty = !!j.draft;
+  renderHistory(j.versions || [], j.publishedState);
+  render();
+  return true;
+}
+
+$('#label').addEventListener('input', () => { state.label = $('#label').value; markDirty(); });
+$('#add-dish').addEventListener('click', () => {
+  const n = state.dishes.length + 1;
+  state.dishes.push({ ref: `r-${String(n).padStart(2, '0')}`, name: '', desc: '', price: 0,
+    allergens: [], mayContain: [], diets: [], allergenStatus: 'unverified', pairings: [] });
+  markDirty(); render();
+});
+$('#add-drink').addEventListener('click', () => {
+  const n = state.drinks.length + 1;
+  state.drinks.push({ ref: `d-${String(n).padStart(2, '0')}`, name: '', kind: 'annet', abv: 0, price: 0, allergens: [] });
+  markDirty(); render();
+});
+
+for (const b of document.querySelectorAll('.tabs button')) {
+  b.addEventListener('click', () => {
+    for (const o of document.querySelectorAll('.tabs button')) o.setAttribute('aria-selected', String(o === b));
+    for (const name of ['dishes', 'drinks', 'history']) $(`#tab-${name}`).hidden = name !== b.dataset.tab;
+  });
+}
+
+$('#save').addEventListener('click', async () => {
+  const btn = $('#save'); btn.disabled = true; btn.textContent = 'Lagrer …';
+  hide($('#msg'));
+  try {
+    const r = await fetch('/api/menu', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(state),
+    });
+    const j = await r.json();
+    if (!r.ok) { show($('#msg'), 'bad', j.error || 'Kunne ikke lagre.', j.errors); return; }
+    show($('#msg'), 'ok', `Utkast lagret (${j.dishes} retter). Gjester ser fortsatt den publiserte menyen.`);
+    dirty = false; $('#pill-draft').hidden = false;
+  } catch (e) {
+    show($('#msg'), 'bad', e.message);
+  } finally { btn.disabled = false; btn.textContent = 'Lagre utkast'; }
+});
+
+$('#publish').addEventListener('click', () => {
+  hide($('#dlg-msg'));
+  const warn = $('#dlg-warn'); warn.textContent = '';
+  const unver = state.dishes.filter((d) => d.allergenStatus !== 'verified');
+  if (unver.length) {
+    const m = el('div', 'msg on bad');
+    m.textContent = `${unver.length} rett${unver.length > 1 ? 'er' : ''} mangler bekreftet allergeninfo og vil ikke bli anbefalt til gjester med allergi: ${unver.map((d) => d.name || d.ref).join(', ')}.`;
+    warn.appendChild(m);
+  }
+  $('#dlg').showModal();
+});
+$('#dlg-cancel').addEventListener('click', () => $('#dlg').close());
+
+$('#publish-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = $('#dlg-go'); btn.disabled = true; btn.textContent = 'Publiserer …';
+  hide($('#dlg-msg'));
+  try {
+    const r = await fetch('/api/menu', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        menu: state,
+        attestation: {
+          byName: $('#by-name').value.trim(),
+          byRole: $('#by-role').value.trim(),
+          confirmed: $('#confirmed').checked,
+        },
+      }),
+    });
+    const j = await r.json();
+    if (!r.ok) { show($('#dlg-msg'), 'bad', j.error || 'Kunne ikke publisere.', j.errors); return; }
+    $('#dlg').close();
+    show($('#msg'), 'ok',
+      `Publisert: ${j.label} — ${j.dishes} retter, signatur låst til allergendataene (${j.digest}…).` +
+      (j.unverified ? ` ${j.unverified} rett(er) uten bekreftet allergeninfo sendes til personalet.` : ''));
+    $('#confirmed').checked = false;
+    await load();
+  } catch (err) {
+    show($('#dlg-msg'), 'bad', err.message);
+  } finally { btn.disabled = false; btn.textContent = 'Publiser'; }
+});
+
+window.addEventListener('beforeunload', (e) => {
+  if (dirty) { e.preventDefault(); e.returnValue = ''; }
+});
+
+// ------------------------------------------------------------------ oppstart
+if (new URLSearchParams(location.search).get('feil') === 'lenke') {
+  show($('#login-msg'), 'bad', 'Innloggingslenken var brukt eller utløpt. Be om en ny.');
+}
+if (await load()) {
+  $('#login').style.display = 'none';
+  $('#app').classList.add('on');
+}
+</script>
+</body>
+</html>
