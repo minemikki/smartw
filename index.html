@@ -230,6 +230,10 @@ const EXAMPLES = [
   'Hva anbefaler du i dag?',
 ];
 
+// Which venue's menu this page talks to. One deployment serves many venues;
+// a real embed reads this from the snippet or the URL.
+const VENUE = new URLSearchParams(location.search).get('venue') || 'brygge-og-bord';
+
 const log = document.getElementById('log');
 const form = document.getElementById('form');
 const input = document.getElementById('input');
@@ -290,7 +294,13 @@ function renderPanel(d) {
   document.getElementById('decision').innerHTML = li.join('');
 
   const g = document.getElementById('guard');
-  if (d.meta && d.meta.guarded) {
+  if (d.meta && d.meta.attestationOk === false) {
+    g.className = 'guard on';
+    g.textContent = 'Attestering: MANGLER ELLER STEMMER IKKE — ingen allergenpåstand gis, alt sendes til personalet.';
+  } else if (d.meta && d.meta.degraded) {
+    g.className = 'guard on';
+    g.textContent = 'Modellen var utilgjengelig — koden filtrerte menyen alene og svarte med listen rått.';
+  } else if (d.meta && d.meta.guarded) {
     g.className = 'guard on';
     g.textContent = 'Kontroll av svaret: SLO INN — modellen nevnte en utelukket rett, setningen ble forkastet.';
   } else {
@@ -323,7 +333,7 @@ form.addEventListener('submit', async (e) => {
     const r = await fetch('/api/waiter', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: history.slice(-10) }),
+      body: JSON.stringify({ venue: VENUE, messages: history.slice(-10) }),
     });
     const d = await r.json();
     dots.remove();

@@ -10,6 +10,7 @@
     "test": "node tools/check.mjs && node tools/smoke.mjs"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.127.0"
+    "@anthropic-ai/sdk": "^0.127.0",
+    "pg": "^8.23.0"
   }
 }
